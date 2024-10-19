@@ -6,6 +6,7 @@
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QBarCategoryAxis>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -23,13 +24,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
-
-    series = new QLineSeries();
-    QChart *chart = new QChart();
-    chart->addSeries(series);
-    chart->setTitle("Рост потребителей");
-    chart->createDefaultAxes();
-    ui->chartView->setChart(chart);
 
     potentialBuyersSet = new QBarSet("Потенциальные покупатели");
     productUsersSet = new QBarSet("Покупатели");
@@ -72,35 +66,30 @@ void MainWindow::updateScene(int numberOfPeople) {
     int currentDay = environment->getCurrentDay();
     environment->updateEnvironment(day);
 
-    scene->clear();
     int productUsers = 0;
     int potentialBuyers = 0;
 
     QString agentColorName = ui->newAgentColor->currentText();
     QString productUserColorName = ui->newProductUserColor->currentText();
 
-    // Конвертируем строки в цвета
+
     QColor agentColor(agentColorName);
     QColor productUserColor(productUserColorName);
 
     for (int i = 0; i < numberOfPeople; ++i) {
-        QBrush brush(agentColor); // По умолчанию цвет для новых агентов
+        QBrush brush(agentColor);
 
         if (environment->getAgentState(i) == Agent::PotentialBuyer) {
             scene->addEllipse(i*10 % 300, (i/30) * 10, 10, 10, QPen(), brush);
             potentialBuyers++;
         } else if(environment->getAgentState(i) == Agent::ProductUser) {
-            brush.setColor(productUserColor);  // Цвет для пользователей продукта
+            brush.setColor(productUserColor);
             scene->addEllipse(i*10 % 300, (i/30) * 10, 10, 10, QPen(), brush);
             productUsers++;
         }
     }
 
-    // Обновляем график количества пользователей продукта
-    series->append(ui->numberOfIterations->value(), productUsers);
-
-    // Обновляем график столбцов
-    if (day < 30) { // Максимум 30 дней
+    if (day < 30) {
         if (day <= currentDay) {
             currentDay = day;
             potentialBuyersSet->remove(0, potentialBuyersSet->count());
@@ -132,23 +121,27 @@ void MainWindow::on_createPopulation_clicked()
     int shelfLife = ui->shelfLife->value();
     environment = std::make_unique<Environment>(numberOfPeople, consumerPercentage, shelfLife);
 
-    // Обнуляем данные для графиков, если они были инициализированы
     if (potentialBuyersSet) {
-        potentialBuyersSet->remove(0, potentialBuyersSet->count()); // Удалить все значения
+        potentialBuyersSet->remove(0, potentialBuyersSet->count());
     } else {
         potentialBuyersSet = new QBarSet("Потенциальные покупатели");
     }
 
     if (productUsersSet) {
-        productUsersSet->remove(0, productUsersSet->count()); // Удалить все значения
+        productUsersSet->remove(0, productUsersSet->count());
     } else {
         productUsersSet = new QBarSet("Покупатели");
     }
+
 }
 
 void MainWindow::on_startNewDay_clicked()
 {
+    if (!environment) {
+        QMessageBox::warning(this, "Ошибка", "Сначала создайте популяцию.");
+        return;
+    }
+
     updateScene(environment->getNumberOfPeople());
 }
-
 

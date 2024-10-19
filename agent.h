@@ -21,7 +21,7 @@ public:
     int getDays() const;
     void reset();
     bool operator==(const Agent& other) const {
-        return this == &other;  // Сравнение по указателю
+        return this == &other;
     }
     bool isNotifyed() const;
 
@@ -36,7 +36,7 @@ namespace std {
 template<>
 struct hash<Agent> {
     std::size_t operator()(const Agent& agent) const noexcept {
-        return std::hash<const Agent*>()(&agent);  // Хэшируем указатель на объект
+        return std::hash<const Agent*>()(&agent);
     }
 };
 };
