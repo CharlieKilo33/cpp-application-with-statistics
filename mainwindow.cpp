@@ -31,22 +31,18 @@ MainWindow::MainWindow(QWidget *parent)
     chart->createDefaultAxes();
     ui->chartView->setChart(chart);
 
-    // Инициализация графика для столбцов
     potentialBuyersSet = new QBarSet("Потенциальные покупатели");
     productUsersSet = new QBarSet("Покупатели");
 
-    // Создаем столбчатый график и добавляем наборы данных
     QBarSeries *barSeries = new QBarSeries();
     barSeries->append(potentialBuyersSet);
     barSeries->append(productUsersSet);
 
-    // Настраиваем график
     QChart *barChart = new QChart();
     barChart->addSeries(barSeries);
     barChart->setTitle("Рост потребителей");
     barChart->setAnimationOptions(QChart::SeriesAnimations);
 
-    // Ось X - дни
     QStringList categories;
     for (int i = 0; i < 30; ++i) {
         categories << QString::number(i);
@@ -57,9 +53,8 @@ MainWindow::MainWindow(QWidget *parent)
     barChart->addAxis(axisX, Qt::AlignBottom);
     barSeries->attachAxis(axisX);
 
-    // Ось Y - количество пользователей
     QValueAxis *axisY = new QValueAxis();
-    axisY->setRange(0, 500); // Максимум 1000 потребителей
+    axisY->setRange(0, 500);
     axisY->setTickCount(11);
     barChart->addAxis(axisY, Qt::AlignLeft);
     barSeries->attachAxis(axisY);
@@ -74,14 +69,13 @@ MainWindow::~MainWindow()
 
 void MainWindow::updateScene(int numberOfPeople) {
     int day = ui->numberOfIterations->value();
+    int currentDay = environment->getCurrentDay();
     environment->updateEnvironment(day);
 
-    // Очищаем сцену и заново рисуем агентов
     scene->clear();
     int productUsers = 0;
     int potentialBuyers = 0;
 
-    // Получаем цвет для новых агентов и пользователей продукта из комбобоксов
     QString agentColorName = ui->newAgentColor->currentText();
     QString productUserColorName = ui->newProductUserColor->currentText();
 
@@ -107,24 +101,28 @@ void MainWindow::updateScene(int numberOfPeople) {
 
     // Обновляем график столбцов
     if (day < 30) { // Максимум 30 дней
-        if (day <= current_day) {
-            // Изменяем старые значения
-            potentialBuyersSet->remove(day, current_day - day + 1);
-            productUsersSet->remove(day, current_day - day + 1);
-            potentialBuyersSet->append(potentialBuyers);
-            productUsersSet->append(productUsers);
-        } else if (day > current_day + 1){
-            // Добавляем новые значения
-            potentialBuyersSet->insert(day, potentialBuyers);
-            productUsersSet->insert(day, productUsers);
-
+        if (day <= currentDay) {
+            currentDay = day;
+            potentialBuyersSet->remove(0, potentialBuyersSet->count());
+            productUsersSet->remove(0, productUsersSet->count());
+            for(int i = 0; i <= currentDay; ++i){
+                potentialBuyers = environment->getBase()[i].first;
+                productUsers = environment->getBase()[i].second;
+                potentialBuyersSet->append(potentialBuyers);
+                productUsersSet->append(productUsers);
+            }
+        } else if (day > currentDay + 1){
+            for(int i = currentDay + 1; i <= day; ++i){
+                potentialBuyers = environment->getBase()[i].first;
+                productUsers = environment->getBase()[i].second;
+                potentialBuyersSet->append(potentialBuyers);
+                productUsersSet->append(productUsers);
+            }
         } else {
             potentialBuyersSet->append(potentialBuyers);
             productUsersSet->append(productUsers);
         }
     }
-    current_day = day;
-
 }
 
 void MainWindow::on_createPopulation_clicked()

@@ -39,6 +39,5 @@ private:
     QBarSet *potentialBuyersSet;
     QBarSet *productUsersSet;
     QLineSeries *series;
-    int current_day = 0;
 };
 #endif // MAINWINDOW_H

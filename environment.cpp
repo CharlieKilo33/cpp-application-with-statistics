@@ -16,6 +16,8 @@ void Environment::updateEnvironment(int dayNumber) {
         productUsers = 0;
         currentDay = dayNumber;
         notifyedAgents.clear();
+        allBase.clear();
+        allBase.push_back(std::make_pair(numberOfPeople, 0));
         std::cout << "Reset all agents." << std::endl;
     } else if(dayNumber <= currentDay) {
         for (auto& agent : agents) {
@@ -24,9 +26,12 @@ void Environment::updateEnvironment(int dayNumber) {
         productUsers = 0;
         notifyedAgents.clear();
         buyerAndDays.clear();
+        allBase.clear();
+        allBase.push_back(std::make_pair(numberOfPeople, 0));
 
         // Считаем всё заново до текущего дня
         for (int day = 1; day <= dayNumber; ++day) {
+            std::pair<int, int> new_buyers = allBase.back();
             std::cout << "Updating environment for day " << dayNumber << std::endl;
 
             // Выводим состояние всех агентов в начале дня
@@ -42,11 +47,12 @@ void Environment::updateEnvironment(int dayNumber) {
             while (!notifyedAgents.empty()) {
                 auto agent = notifyedAgents.front();
                 notifyedAgents.pop_front();
-
                 if (productUsers < numberOfPeople && agent->getState() != Agent::State::ProductUser) {
                     agent->becomeBuyer();
                     ++productUsers;
                     buyerAndDays[agent] = agent->getDays();
+                    --new_buyers.first;
+                    ++new_buyers.second;
                     std::cout << "Notified agent became a buyer." << std::endl;
                 }
             }
@@ -62,12 +68,14 @@ void Environment::updateEnvironment(int dayNumber) {
 
                 if (randomIndex1 < 0 || randomIndex1 >= agents.size()) {
                     std::cerr << "Error: randomIndex1 out of bounds: " << randomIndex1 << std::endl;
-                    return;
+                    throw;
                 }
 
                 agents[randomIndex1]->becomeBuyer();
                 buyerAndDays[agents[randomIndex1]] = agents[randomIndex1]->getDays();
                 ++productUsers;
+                --new_buyers.first;
+                ++new_buyers.second;
                 std::cout << "Random agent " << randomIndex1 << " became a buyer." << std::endl;
 
                 if (productUsers >= numberOfPeople) {
@@ -81,7 +89,7 @@ void Environment::updateEnvironment(int dayNumber) {
 
                 if (randomIndex2 < 0 || randomIndex2 >= agents.size()) {
                     std::cerr << "Error: randomIndex2 out of bounds: " << randomIndex2 << std::endl;
-                    return;
+                    throw;
                 }
 
                 agents[randomIndex1]->notifyOtherAgent(agents[randomIndex2]);
@@ -95,12 +103,16 @@ void Environment::updateEnvironment(int dayNumber) {
                 day = agent->getDays();
                 if (agent->getState() == Agent::State::PotentialBuyer) {
                     --productUsers;
+                    ++new_buyers.first;
+                    --new_buyers.second;
                 }
             }
+            allBase.push_back(new_buyers);
         }
         currentDay = dayNumber;
     } else {
         for (int day = currentDay + 1; day <= dayNumber; ++day) {
+            std::pair<int, int> new_buyers = allBase.back();
             std::cout << "Updating environment for day " << dayNumber << std::endl;
             std::cout << "Agents states at start of day " << dayNumber << ": ";
             for (int i = 0; i < agents.size(); ++i) {
@@ -119,6 +131,8 @@ void Environment::updateEnvironment(int dayNumber) {
                     agent->becomeBuyer();
                     ++productUsers;
                     buyerAndDays[agent] = agent->getDays();
+                    --new_buyers.first;
+                    ++new_buyers.second;
                     std::cout << "Notified agent became a buyer." << std::endl;
                 }
             }
@@ -134,12 +148,14 @@ void Environment::updateEnvironment(int dayNumber) {
 
                 if (randomIndex1 < 0 || randomIndex1 >= agents.size()) {
                     std::cerr << "Error: randomIndex1 out of bounds: " << randomIndex1 << std::endl;
-                    return;
+                    throw;
                 }
 
                 agents[randomIndex1]->becomeBuyer();
                 buyerAndDays[agents[randomIndex1]] = 0;
                 ++productUsers;
+                --new_buyers.first;
+                ++new_buyers.second;
                 std::cout << "Random agent " << randomIndex1 << " became a buyer." << std::endl;
 
                 if (productUsers >= numberOfPeople) {
@@ -153,7 +169,7 @@ void Environment::updateEnvironment(int dayNumber) {
 
                 if (randomIndex2 < 0 || randomIndex2 >= agents.size()) {
                     std::cerr << "Error: randomIndex2 out of bounds: " << randomIndex2 << std::endl;
-                    return;
+                    throw;
                 }
 
                 agents[randomIndex1]->notifyOtherAgent(agents[randomIndex2]);
@@ -167,9 +183,12 @@ void Environment::updateEnvironment(int dayNumber) {
                 day = agent->getDays();
                 if (agent->getState() == Agent::State::PotentialBuyer) {
                     --productUsers;
+                    ++new_buyers.first;
+                    --new_buyers.second;
                 }
             }
             std::cout << productUsers << std::endl;
+            allBase.push_back(new_buyers);
         }
         currentDay = dayNumber;
     }
@@ -184,4 +203,12 @@ Agent::State Environment::getAgentState(int index) const {
 
 int Environment::getNumberOfPeople() const {
     return numberOfPeople;
+}
+
+Environment::allPeople Environment::getBase() const{
+    return allBase;
+}
+
+int Environment::getCurrentDay() const {
+    return currentDay;
 }
